@@ -2,24 +2,45 @@
 
 const bcrypt = require("bcryptjs");
 const UsuarioModel = require("../models/usuarioModel");
+const {
+  validarCamposObrigatorios,
+  validarEmail,
+  validarSenha,
+} = require("../../../utils/validarCampos");
+
 
 class UsuarioController {
   static async cadastrar(req, res) {
     try {
-      const {id,  nome, email, senha } = req.body;
+      const { nome, email, senha } = req.body;
 
-      if (!id || !nome || !email ||  !senha) {
-        return res.status(400).json({ msg: "Todos os campos (id, nome, email, senha) são obrigatórios." });
+      // Verificar campos obrigatórios
+      const erroCampos = validarCamposObrigatorios(["nome", "email", "senha"], req.body);
+      if (erroCampos) {
+        return res.status(400).json({ msg: erroCampos });
       }
 
-      const usuarioExistente = await UsuarioModel.findOne({ where: { id } });
+      // Validar email
+      if (!validarEmail(email)) {
+        return res.status(400).json({ msg: "Email inválido!" });
+      }
+
+      // Validar senha (mínimo 6 caracteres)
+      if (!validarSenha(senha)) {
+        return res.status(400).json({ msg: "Senha deve conter pelo menos 6 caracteres." });
+      }
+
+      // Verificar se o usuário já existe
+      const usuarioExistente = await UsuarioModel.findOne({ where: { email } });
       if (usuarioExistente) {
-        return res.status(409).json({ msg: "Usuário com essa Id já existe!" });
+        return res.status(409).json({ msg: "Usuário com este e-mail já existe!" });
       }
 
+      // Criptografar senha
       const senhaHash = await bcrypt.hash(senha, 10);
 
-      await UsuarioModel.create({id,  nome, senha: senhaHash });
+      // Criar usuário
+      await UsuarioModel.create({ nome, email, senha: senhaHash });
 
       res.status(201).json({ msg: "Usuário criado com sucesso!" });
     } catch (error) {
@@ -29,88 +50,32 @@ class UsuarioController {
 
   static async listarTodos(req, res) {
     try {
-      const usuarios = await UsuarioModel.findAll({ attributes: { exclude: ['senha'] } });
+      const usuarios = await UsuarioModel.findAll({
+        attributes: { exclude: ["senha"] },
+      });
       res.status(200).json(usuarios);
     } catch (error) {
       res.status(500).json({ msg: "Erro ao listar usuários", erro: error.message });
     }
   }
 
-//   static async listarPorId(req, res) {
-//     try {
-//       const { id } = req.params;
-//       const usuario = await UsuarioModel.findOne({ where: { id , attributes: { exclude: ['senha'] } });
+  static async perfil(req, res) {
+    try {
+      const { id } = req.usuario; // vem do token JWT via middleware
 
-//       if (!usuario) {
-//         return res.status(404).json({ msg: "Usuário não encontrado." });
-//       }
+      const usuario = await UsuarioModel.findByPk(id, {
+        attributes: { exclude: ["senha"] },
+      });
 
-//       res.status(200).json(usuario);
-//     } catch (error) {
-//       res.status(500).json({ msg: "Erro ao buscar usuário", erro: error.message });
-//     }
-//   }
+      if (!usuario) {
+        return res.status(404).json({ msg: "Perfil não encontrado." });
+      }
 
-//   static async editar(req, res) {
-//     try {
-//       const { id } = req.params;
-//       const { nome, email, senha } = req.body;
-
-//       const usuario = await UsuarioModel.findByPk(id);
-//       if (!usuario) {
-//         return res.status(404).json({ msg: "Usuário não encontrado." });
-//       }
-
-//       const novaSenha = senha ? await bcrypt.hash(senha, 10) : usuario.senha;
-
-//       await UsuarioModel.update({ nome, senha: novaSenha }, { where: { id } });
-
-//       res.status(200).json({ msg: "Usuário atualizado com sucesso!" });
-//     } catch (error) {
-//       res.status(500).json({ msg: "Erro ao atualizar usuário", erro: error.message });
-//     }
-//   }
-
-//   static async excluirPorId(req, res) {
-//     try {
-//       const { senha } = req.params;
-
-//       const usuario = await UsuarioModel.findByPk(senha);
-//       if (!usuario) {
-//         return res.status(404).json({ msg: "Usuário não encontrado." });
-//       }
-
-//       await UsuarioModel.destroy({ where: { senha } });
-
-//       res.status(200).json({ msg: "Usuário excluído com sucesso!" });
-//     } catch (error) {
-//       res.status(500).json({ msg: "Erro ao excluir usuário", erro: error.message });
-//     }
-//   }
-
-//   static async excluirTodos(req, res) {
-//     try {
-//       await UsuarioModel.destroy({ where: {} });
-//       res.status(200).json({ msg: "Todos os usuários foram excluídos!" });
-//     } catch (error) {
-//       res.status(500).json({ msg: "Erro ao excluir todos os usuários", erro: error.message });
-//     }
-//   }
-
-//   static async perfil(req, res) {
-//     try {
-//       const { id } = req.usuario; // vem do token (middleware)
-
-//       const usuario = await UsuarioModel.findByPk(id, { attributes: { exclude: ['senha'] } });
-//       if (!usuario) {
-//         return res.status(404).json({ msg: "Perfil não encontrado" });
-//       }
-
-//       res.status(200).json({ perfil: usuario });
-//     } catch (error) {
-//       res.status(500).json({ msg: "Erro ao obter perfil", erro: error.message });
-//     }
-//   }
+      res.status(200).json({ perfil: usuario });
+    } catch (error) {
+      res.status(500).json({ msg: "Erro ao obter perfil", erro: error.message });
+    }
+  }
 }
 
 module.exports = UsuarioController;

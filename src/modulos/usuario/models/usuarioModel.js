@@ -1,41 +1,28 @@
 
 
-// modulos/usuario/models/usuarioModel.js
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../../../config/configDB');
 
-const { DataTypes } = require("sequelize");
-const { sequelize } = require("../../../config/configDb");
-
-
-const Usuario = sequelize.define("Usuario", {
- 
+const Usuario = sequelize.define('Usuario', {
   nome: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: false
   },
-
-email: {
+  email: {
     type: DataTypes.STRING,
-    allowNull: false,
     unique: true,
+    allowNull: false,
     validate: {
-      isEmail: { msg: "Email inválido" },
-    },
+      isEmail: true
+    }
   },
-
-      senha: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validade: {
-        is: {
-          args: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-          msg: "A senha deve ter no mínimo 8 caracteres, com letra maiúscula, minúscula, número e caractere especial.",
-        },
-      },
-    },
-  },
- {
-  tableName: "usuarios",
-  timestamps: false,
+  senha: {
+    type: DataTypes.STRING,
+    allowNull: false
+  }
+  // ❌ NÃO declare hasMany aqui
+}, {
+  tableName: 'usuarios'
 });
 
 module.exports = Usuario;

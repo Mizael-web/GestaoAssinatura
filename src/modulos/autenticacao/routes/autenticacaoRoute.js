@@ -1,16 +1,17 @@
 
-const express = require('express');
-const router = express.Router()
 
-const AutenticacaoController = require('../controller/autenticacao.controller')
-// rota publica de login
+const express = require('express');
+const router = express.Router();
+
+const AutenticacaoController = require('../../autenticacao/controllers/autenticacaoController');
+
+// rota pública de login
 router.post('/login', AutenticacaoController.login);
 
-// rota para sair 
+// rota para sair (logout)
 router.post('/logout', AutenticacaoController.sair);
 
-// rota usada pelo navegador para atualizar o token 
-router.post('/refress-token', AutenticacaoController.refreshToken);
+// rota usada pelo navegador para atualizar o token
+router.post('/refresh-token', AutenticacaoController.refreshToken);
 
-
-module.exports = router
+module.exports = router;

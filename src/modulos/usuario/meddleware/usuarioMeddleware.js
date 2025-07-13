@@ -1,4 +1,5 @@
 
+
 const jwt = require("jsonwebtoken");
 
 class AutenticacaoMiddleware {
@@ -11,9 +12,9 @@ class AutenticacaoMiddleware {
     }
 
     jwt.verify(token, process.env.SECRET_KEY, (err, usuario) => {
-      if (err) {
-        return res.status(403).json({ msg: "Token de acesso não fornecido!" });
-      }
+     if (err) {
+  return res.status(403).json({ msg: "Token inválido ou expirado!" }); // ✅
+}
 
       req.usuario = usuario; 
       next();

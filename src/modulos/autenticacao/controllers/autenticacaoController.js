@@ -1,9 +1,10 @@
 
+
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const dotenv = require("dotenv");
 dotenv.config();
-const AssinaturaModel = require("../models/assinaturaModel");
+const AssinaturaModel = require("./../../assinatura/models/assinaturaModel");
 
 // Definindo variaveis de ambiente para TEMPO_ACESS_TOKEN e TEMPO_REFRESH_TOKEN
 const tempo_acess_token = process.env.TEMPO_ACESS_TOKEN;
@@ -11,7 +12,7 @@ const tempo_refresh_token = process.env.TEMPO_REFRESH_TOKEN;
 
 class AutenticacaoController {
   // gerando o token
-  static gerarTokenAcesso(dadosAssinatura) {
+  static gerarTokenAcesso(dadosAssinaturaModel) {
     return jwt.sign(dadosAssinatura, process.env.SECRET_KEY, {
       expiresIn: tempo_acess_token,
     });
@@ -25,31 +26,36 @@ class AutenticacaoController {
 
   static async login(req, res) {
     try {
-      const { matricula, senha } = req.body;
-      if (!matricula || !senha) {
+      const { email, senha } = req.body;
+      if (!email || !senha) {
         return res
           .status(400)
-          .json({ msg: "É necessario informar matricula e senha para login" });
+          .json({ msg: "É necessario informar nome, email e senha para login" });
       }
-      const usuario = await Aluno.findOne({
-        where: { matricula },
+      const usuario = await AssinaturaModel.findOne({
+        where: {email },
       });
       if (!usuario) {
+        return res.status(401).json({ msg: "Usuario não encontrado!" });
+      }
+      const usuarioEmail = await dadosAssinaturaModel.findOne({
+        where: { email },
+      });
+      if (!usuarioEmail) {
         return res.status(401).json({ msg: "Usuario não encontrado!" });
       }
       const senhaCorreta = await bcrypt.compare(senha, usuario.senha);
       if (!senhaCorreta) {
         return res.status(400).json({ msg: "E-mail ou senha incorreto!" });
       }
-      const dadosAluno = {
+      const dadosAssinatura = {
         nome: usuario.nome,
-        matricula: usuario.matricula, // Adicione isso
-        papel: "aluno",
+        papel: "assinatura",
       };
 
       // gerando os tokens
-      const tokenAcesso = AutenticacaoController.gerarTokenAcesso(dadosAluno);
-      const refreshToken = AutenticacaoController.gerarRefressToken(dadosAluno);
+      const tokenAcesso = AutenticacaoController.gerarTokenAcesso(dadosAssinaturaModel);
+      const refreshToken = AutenticacaoController.gerarRefressToken(dadosAssinatura);
 
       res.cookie("refreshToken", refreshToken, {
         httpOnly: false,
@@ -61,7 +67,7 @@ class AutenticacaoController {
         msg: "Usuario logado com sucesso",
         tokenAcesso,
         nome: usuario.nome,
-        papel: "aluno",
+        papel: "assinatura",
       });
     } catch (error) {
       res.status(500).json({
@@ -84,14 +90,13 @@ class AutenticacaoController {
         if (erro) {
           return res.status(403).json({ msg: "Refresh Token invalido!" });
         }
-        const dadosAluno = {
+        const dadosAssinaturaModel = {
           nome: usuario.nome,
-          matricula: usuario.matricula, // Adicione isso
-          papel: "aluno",
+          papel: "assinatura",
         };
 
         // gerando o novo token
-        const novoTokenAcesso = this.gerarTokenAcesso(dadosAluno);
+        const novoTokenAcesso = this.gerarTokenAcesso(dadosAssinaturaModel);
         // atualizando o token antigo para o novo
         res.status(200).json({ tokenAcesso: novoTokenAcesso });
       }
