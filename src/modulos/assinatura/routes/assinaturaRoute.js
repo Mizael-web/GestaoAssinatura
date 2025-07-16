@@ -1,10 +1,9 @@
 
-
 const express = require('express');
 const router = express.Router();
 
 const AssinaturaController = require('../controllers/assinaturaController');
-const AutenticacaoMiddleware = require('../../autenticacao/meddleware/authMeddleware'); // Caminho corrigido
+const AutenticacaoMiddleware = require('../../../middleware/autenticacao.middleware'); // Caminho corrigido
 
 // Rotas protegidas (JWT obrigatório)
 router.get('/', AutenticacaoMiddleware.autenticarToken, AssinaturaController.listarTodos);

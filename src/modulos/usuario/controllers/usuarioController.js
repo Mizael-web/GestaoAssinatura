@@ -4,12 +4,12 @@ const jwt = require('jsonwebtoken');
 const Usuario = require('../models/usuarioModel');
 
 class UsuarioController {
-  // ✅ Cadastrar novo usuário
+  // ✅ Cadastrar usuário
   static async cadastrar(req, res) {
     try {
-      const { nome, email, senha } = req.body;
+      const { nome, papel, email, senha } = req.body;
 
-      if (!nome || !email || !senha) {
+      if (!nome ||!papel || !email || !senha ) {
         return res.status(400).json({ msg: 'Todos os campos são obrigatórios' });
       }
 
@@ -18,19 +18,15 @@ class UsuarioController {
         return res.status(409).json({ msg: 'Email já cadastrado' });
       }
 
-      const senhaHash = await bcrypt.hash(senha, 10);
-      const novoUsuario = await Usuario.create({ nome, email, senha: senhaHash });
 
-      return res.status(201).json({
-        msg: 'Usuário cadastrado com sucesso',
-        id: novoUsuario.id,
-        nome: novoUsuario.nome,
-        email: novoUsuario.email
-      });
-    } catch (err) {
-      return res.status(500).json({ msg: 'Erro ao cadastrar usuário', erro: err.message });
+           // criptografando a senha
+      const senhaCriptografada = await bcrypt.hash(senha, 15);
+      await Usuario.create({ nome, papel, email, senha: senhaCriptografada });
+      res.status(200).json({ msg: 'Usuario criado com sucesso' });
+    } catch (error) {
+        res.status(500).json({msg: 'Erro do servidor. Tente novamente mais tarde!', erro: error.message})
     }
-  }
+  } 
 
   // ✅ Login
   static async login(req, res) {
@@ -74,7 +70,7 @@ class UsuarioController {
       const { id } = req.usuario; // Vem do middleware de autenticação
 
       const usuario = await Usuario.findByPk(id, {
-        attributes: ['id', 'nome', 'email']
+        attributes: ['id', 'nome', 'email', 'papel']
       });
 
       if (!usuario) {
@@ -88,10 +84,10 @@ class UsuarioController {
   }
 
   // ✅ Listar todos os usuários
-  static async listarTodos(req, res) {
+  static async listar(req, res) {
     try {
       const usuarios = await Usuario.findAll({
-        attributes: ['id', 'nome', 'email']
+        attributes: ['id', 'nome', 'email', 'papel']
       });
       return res.status(200).json(usuarios);
     } catch (err) {
